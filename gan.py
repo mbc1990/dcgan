@@ -18,15 +18,11 @@ import numpy as np
 
 class DCGAN():
     def __init__(self):
+        # (M): Note that right now, rows and cols should both be divisible by 4
         self.img_rows = 148 
         self.img_cols = 148 
         self.channels = 3
         
-        # Goldens 150x150 filtered
-        # self.img_rows = 150 
-        # self.img_cols = 150 
-        # self.channels = 1
-
         optimizer = Adam(0.0002, 0.5)
 
         # Build and compile the discriminator
@@ -42,7 +38,6 @@ class DCGAN():
         # The generator takes noise as input and generated imgs
         z = Input(shape=(100,))
 
-        # TODO (M): img here is (28, 28, 1), when it should be (28, 28, 3)
         img = self.generator(z)
 
         # For the combined model we will only train the generator
@@ -62,11 +57,8 @@ class DCGAN():
         
         model = Sequential()
         
-        # TODO (M): I'm guessing these 7 * 7 things have somethign to do with it
-        # TODO (M): because 7 is a factor of 28
-        # TODO (M): Update: Yes this is true, see model.summary() output for more info
-        model.add(Dense(128 * int((self.img_rows/4)) * int((self.img_cols/4)), activation="relu", input_shape=noise_shape))
-        # model.add(Reshape((7, 7, 128)))
+        model.add(Dense(128 * int((self.img_rows/4)) * int((self.img_cols/4)),
+                  activation="relu", input_shape=noise_shape))
         model.add(Reshape((int(self.img_rows/4), int(self.img_cols/4), 128)))
         model.add(BatchNormalization(momentum=0.8))
         model.add(UpSampling2D())
@@ -77,14 +69,10 @@ class DCGAN():
         model.add(Conv2D(64, kernel_size=3, padding="same"))
         model.add(Activation("relu"))
         model.add(BatchNormalization(momentum=0.8))
-        # TODO (M): Note that changing this layer from 1 filters to 3 filters
-        # TODO (M): results in (None, 28, 28, 3) output shape
-        # model.add(Conv2D(1, kernel_size=3, padding="same"))
+
+        # (M): N.B. Filters (3, here) corresponds to the number of color channels
         model.add(Conv2D(3, kernel_size=3, padding="same"))
         model.add(Activation("tanh"))
-
-        # TODO (M): model.output_shape is (None, 28, 28, 1) by default
-        # TODO (M): So that means there's something in here that needs to be changed
 
         model.summary()
         
@@ -139,26 +127,20 @@ class DCGAN():
         temp = []
         for img_name in files:
             image_path = os.path.join(img_dir, img_name)
-            # img = imread(image_path, flatten=True) # TODO (M): This turns (28, 28, 3) into (28, 28, 1)
             img = imread(image_path, flatten=False)
             img = img.astype('float32')
             temp.append(img)
         
-        # (M): For some reason, one of the images just ends up (28, 28)
+        # (M): For some reason, one of the images doesn't have a 3rd channel
         # (M): so let's throw it out...
         temp = [t for t in temp if t.shape == (self.img_rows, self.img_cols, 3)]
         
-
         train_x = np.stack(temp)
-        return (train_x, None), (None, None)
+        return train_x
 
     def train(self, epochs, batch_size=128, save_interval=50):
 
-        # Load the dataset
-        # (X_train, _), (_, _) = mnist.load_data()
-
-        # (X_train, _), (_, _) = self.load_input("images_28/")
-        (X_train, _), (_, _) = self.load_input("images_148/")
+        X_train = self.load_input("images_148/")
 
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
