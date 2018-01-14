@@ -18,8 +18,8 @@ import numpy as np
 
 class DCGAN():
     def __init__(self):
-        self.img_rows = 28 
-        self.img_cols = 28
+        self.img_rows = 148 
+        self.img_cols = 148 
         self.channels = 3
         
         # Goldens 150x150 filtered
@@ -65,8 +65,9 @@ class DCGAN():
         # TODO (M): I'm guessing these 7 * 7 things have somethign to do with it
         # TODO (M): because 7 is a factor of 28
         # TODO (M): Update: Yes this is true, see model.summary() output for more info
-        model.add(Dense(128 * 7 * 7, activation="relu", input_shape=noise_shape))
-        model.add(Reshape((7, 7, 128)))
+        model.add(Dense(128 * 37 * 37, activation="relu", input_shape=noise_shape))
+        # model.add(Reshape((7, 7, 128)))
+        model.add(Reshape((37, 37, 128)))
         model.add(BatchNormalization(momentum=0.8))
         model.add(UpSampling2D())
         model.add(Conv2D(128, kernel_size=3, padding="same"))
@@ -145,7 +146,8 @@ class DCGAN():
         
         # (M): For some reason, one of the images just ends up (28, 28)
         # (M): so let's throw it out...
-        temp = [t for t in temp if t.shape == (28, 28, 3)]
+        temp = [t for t in temp if t.shape == (self.img_rows, self.img_cols, 3)]
+        
 
         train_x = np.stack(temp)
         return (train_x, None), (None, None)
@@ -155,7 +157,8 @@ class DCGAN():
         # Load the dataset
         # (X_train, _), (_, _) = mnist.load_data()
 
-        (X_train, _), (_, _) = self.load_input("images_28/")
+        # (X_train, _), (_, _) = self.load_input("images_28/")
+        (X_train, _), (_, _) = self.load_input("images_148/")
 
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
