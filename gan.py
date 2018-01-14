@@ -65,9 +65,9 @@ class DCGAN():
         # TODO (M): I'm guessing these 7 * 7 things have somethign to do with it
         # TODO (M): because 7 is a factor of 28
         # TODO (M): Update: Yes this is true, see model.summary() output for more info
-        model.add(Dense(128 * 37 * 37, activation="relu", input_shape=noise_shape))
+        model.add(Dense(128 * int((self.img_rows/4)) * int((self.img_cols/4)), activation="relu", input_shape=noise_shape))
         # model.add(Reshape((7, 7, 128)))
-        model.add(Reshape((37, 37, 128)))
+        model.add(Reshape((int(self.img_rows/4), int(self.img_cols/4), 128)))
         model.add(BatchNormalization(momentum=0.8))
         model.add(UpSampling2D())
         model.add(Conv2D(128, kernel_size=3, padding="same"))
