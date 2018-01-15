@@ -25,8 +25,8 @@ class DCGAN():
     """
     def __init__(self):
         # (M): Note that right now, rows and cols should both be divisible by 4
-        self.img_rows = 28 
-        self.img_cols = 28
+        self.img_rows = 148 
+        self.img_cols = 148 
         self.channels = 3
         
         optimizer = Adam(0.0002, 0.5)
@@ -147,7 +147,7 @@ class DCGAN():
         return train_x
 
     def train(self, epochs, batch_size=128, save_interval=50):
-        X_train = self.load_input("images_28/")
+        X_train = self.load_input("images_148/")
 
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
@@ -190,16 +190,27 @@ class DCGAN():
                 self.save_imgs(epoch)
 
     def is_bad(self, img):
-        for i2 in range(self.img_rows):
-            for j2 in range(self.img_cols):
-                for val in img[i2][j2]:
+        """
+        Sometimes, the generator produces images with RGB channel values
+        less or greater than 1. This doesn't happen often but if matplotlib
+        tries to render such a value, it will crash.
+
+        Returns:
+            bool true if an RGB channel value will crash matplotlib
+        """
+        for i in range(self.img_rows):
+            for j in range(self.img_cols):
+                for val in img[i][j]:
                     if val < 0 or val > 1:
                         return True
         return False
 
 
     def save_imgs(self, epoch):
-        r, c = 3, 3
+        """
+        Does a forward pass on the generator and saves the output
+        """
+        r, c = 2, 2
         noise = np.random.normal(0, 1, (r * c, 100))
         gen_imgs = self.generator.predict(noise)
 
