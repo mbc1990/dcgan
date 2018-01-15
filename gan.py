@@ -17,10 +17,16 @@ import sys
 import numpy as np
 
 class DCGAN():
+    """
+    This is a DCGAN implementation, based on one somebody on the internet made
+
+    I've modified it to work on color images of various sizes, instead of just
+    on the MNIST data set
+    """
     def __init__(self):
         # (M): Note that right now, rows and cols should both be divisible by 4
-        self.img_rows = 148 
-        self.img_cols = 148 
+        self.img_rows = 28 
+        self.img_cols = 28
         self.channels = 3
         
         optimizer = Adam(0.0002, 0.5)
@@ -121,7 +127,7 @@ class DCGAN():
             img_dir (string): Path to input image directory
 
         Returns
-            Same format as mnist.load_data()
+            numpy array with shape (input size, x, y, channels) 
         """
         files = os.listdir(img_dir)
         temp = []
@@ -134,19 +140,17 @@ class DCGAN():
         # (M): For some reason, one of the images doesn't have a 3rd channel
         # (M): so let's throw it out...
         temp = [t for t in temp if t.shape == (self.img_rows, self.img_cols, 3)]
+
+        print ("Training on " + str(len(temp)) + " input images")
         
         train_x = np.stack(temp)
         return train_x
 
     def train(self, epochs, batch_size=128, save_interval=50):
-
-        X_train = self.load_input("images_148/")
+        X_train = self.load_input("images_28/")
 
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
-
-        # (M): This was apparently adding a 3rd dimension to input data?
-        # X_train = np.expand_dims(X_train, axis=3)
 
         half_batch = int(batch_size / 2)
 
@@ -185,28 +189,40 @@ class DCGAN():
             if epoch % save_interval == 0:
                 self.save_imgs(epoch)
 
+    def is_bad(self, img):
+        for i2 in range(self.img_rows):
+            for j2 in range(self.img_cols):
+                for val in img[i2][j2]:
+                    if val < 0 or val > 1:
+                        return True
+        return False
+
+
     def save_imgs(self, epoch):
-        r, c = 5, 5
+        r, c = 3, 3
         noise = np.random.normal(0, 1, (r * c, 100))
         gen_imgs = self.generator.predict(noise)
 
         # Rescale images 0 - 1
-        # TODO (M): Do we need to this?
         gen_imgs = 0.5 * gen_imgs + 0.5
 
         fig, axs = plt.subplots(r, c)
         cnt = 0
         for i in range(r):
             for j in range(c):
-                # axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
-                # (M): Original author set cmap=gray which seems wrong for this use
-                axs[i,j].imshow(gen_imgs[cnt, :,:,0])
-                axs[i,j].axis('off')
+                if not self.is_bad(gen_imgs[cnt]):
+                    axs[i,j].imshow(gen_imgs[cnt, :, :, :])
+                    axs[i,j].axis('off')
+                else:
+                    print ("Not displaying bad RGB value")
                 cnt += 1
-        fig.savefig("output/goldens_%d.png" % epoch)
+        try:
+            fig.savefig("output/goldens_%d.png" % epoch)
+        except ValueError:
+            print ("Skipping image with out of bounds RGB values")
         plt.close()
 
 
 if __name__ == '__main__':
     dcgan = DCGAN()
-    dcgan.train(epochs=4000, batch_size=32, save_interval=50)
+    dcgan.train(epochs=4000, batch_size=32, save_interval=1)
